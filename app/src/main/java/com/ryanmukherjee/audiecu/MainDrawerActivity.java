@@ -3,9 +3,7 @@ package com.ryanmukherjee.audiecu;
 import android.bluetooth.BluetoothAdapter;
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
-import android.view.View;
+import android.support.v4.app.Fragment;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
@@ -16,10 +14,16 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class MainDrawerActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
     private final static int REQUEST_ENABLE_BT = 1;
+    private DrawerLayout mDrawer;
+    // Map for storing fragments as the user switches between them
+    private Map<Integer, Fragment> mFragmentMap;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,14 +32,18 @@ public class MainDrawerActivity extends AppCompatActivity
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        mDrawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-        drawer.addDrawerListener(toggle);
+                this, mDrawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+        mDrawer.addDrawerListener(toggle);
         toggle.syncState();
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+
+        // Get the fragment that is initialized on startup and place it into our map
+        mFragmentMap = new HashMap<>();
+        mFragmentMap.put(R.id.nav_terminal, getSupportFragmentManager().findFragmentById(R.id.drawer_content));
 
         // Attempt to grab the bluetooth adapter, check if the device doesn't have bluetooth
         BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -71,13 +79,14 @@ public class MainDrawerActivity extends AppCompatActivity
 
     @Override
     public void onBackPressed() {
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-        if (drawer.isDrawerOpen(GravityCompat.START)) {
-            drawer.closeDrawer(GravityCompat.START);
+        if (mDrawer.isDrawerOpen(GravityCompat.START)) {
+            mDrawer.closeDrawer(GravityCompat.START);
         } else {
             super.onBackPressed();
         }
     }
+
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -88,41 +97,52 @@ public class MainDrawerActivity extends AppCompatActivity
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
+        switch(item.getItemId()) {
+            case R.id.action_settings:
+                return true;
         }
-
         return super.onOptionsItemSelected(item);
     }
 
-    @SuppressWarnings("StatementWithEmptyBody")
     @Override
     public boolean onNavigationItemSelected(MenuItem item) {
-        // Handle navigation view item clicks here.
         int id = item.getItemId();
+        // Check if we've already initialized this fragment
+        Fragment fragment = mFragmentMap.get(id);
+        // If we haven't initialized the fragment
+        if (fragment == null) {
+            // Get the fragment class for the currently selected item
+            Class fragmentClass;
+            switch (id) {
+                case R.id.nav_terminal:
+                    fragmentClass = TerminalFragment.class;
+                    break;
+                case R.id.nav_diagnostics:
+                case R.id.nav_logs:
+                case R.id.nav_dumpecu:
+                default:
+                    throw new RuntimeException("Unhandled drawer item selected!");
+            }
 
-        if (id == R.id.nav_camera) {
-            // Handle the camera action
-        } else if (id == R.id.nav_gallery) {
-
-        } else if (id == R.id.nav_slideshow) {
-
-        } else if (id == R.id.nav_manage) {
-
-        } else if (id == R.id.nav_share) {
-
-        } else if (id == R.id.nav_send) {
-
+            // Initialize the fragment and store it in our map
+            try {
+                fragment = (Fragment) fragmentClass.newInstance();
+                mFragmentMap.put(id, fragment);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
 
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-        drawer.closeDrawer(GravityCompat.START);
+        // Replace our content with the selected fragment and commit
+        getSupportFragmentManager().beginTransaction().replace(R.id.drawer_content, fragment).commitAllowingStateLoss();
+
+        // Check the navigation drawer item now that it's selected
+        item.setChecked(true);
+        // Set our title to the drawer item's title
+        setTitle(item.getTitle());
+        // Close the drawer
+        mDrawer.closeDrawer(GravityCompat.START);
+
         return true;
     }
 }
