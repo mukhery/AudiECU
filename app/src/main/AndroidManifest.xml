@@ -3,6 +3,7 @@
     package="com.ryanmukherjee.audiecu">
 
     <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
 
     <application
         android:allowBackup="false"
@@ -19,6 +20,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name=".BluetoothSPPService"
+            android:exported="false"/>
+
     </application>
 
 </manifest>

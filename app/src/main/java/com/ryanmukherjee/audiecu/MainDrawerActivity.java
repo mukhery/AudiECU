@@ -1,13 +1,16 @@
 package com.ryanmukherjee.audiecu;
 
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
 import android.support.design.widget.NavigationView;
+import android.support.v4.app.Fragment;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
@@ -16,14 +19,19 @@ import android.widget.Toast;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 public class MainDrawerActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
+    public final static String ACTION_SEND_COMMAND = "com.ryanmukherjee.intent.SEND_COMMAND";
     private final static int REQUEST_ENABLE_BT = 1;
     private DrawerLayout mDrawer;
     // Map for storing fragments as the user switches between them
     private Map<Integer, Fragment> mFragmentMap;
+    private BluetoothAdapter mBluetoothAdapter;
+    private Set<BluetoothDevice> mPairedDevices;
+    private BluetoothDeviceArrayAdapter mArrayAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,17 +53,54 @@ public class MainDrawerActivity extends AppCompatActivity
         mFragmentMap = new HashMap<>();
         mFragmentMap.put(R.id.nav_terminal, getSupportFragmentManager().findFragmentById(R.id.drawer_content));
 
-        // Attempt to grab the bluetooth adapter, check if the device doesn't have bluetooth
-        BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        // Attempt to grab the current device's bluetooth radio
+        mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (mBluetoothAdapter == null) {
             // Device does not support Bluetooth
+        } else {
+            // If the bluetooth adapter is not enabled, then request that it be enabled
+            if (!mBluetoothAdapter.isEnabled()) {
+                Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+                startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
+            } else {
+                // If the adapter is enabled, then let's prompt the user to connect
+                pickAdapterLaunchService();
+            }
         }
+    }
 
-        // If the bluetooth adapter is not enabled, then request that it be enabled
-        if (!mBluetoothAdapter.isEnabled()) {
-            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
-        }
+    private void pickAdapterLaunchService() {
+        mArrayAdapter = new BluetoothDeviceArrayAdapter(this, R.layout.bluetooth_device_item, R.id.deviceString, mBluetoothAdapter.getBondedDevices());
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Select OBD Adapter");
+
+        builder.setSingleChoiceItems(mArrayAdapter, 0, null);
+
+        builder.setPositiveButton("Connect",
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        // positive button logic
+                        BluetoothDevice currDevice = mArrayAdapter.getDeviceItem(which);
+                        Intent bluetoothServiceIntent = new Intent(MainDrawerActivity.this, BluetoothSPPService.class);
+                        bluetoothServiceIntent.putExtra("bluetoothDevice", currDevice);
+                        startService(bluetoothServiceIntent);
+                    }
+                });
+
+        builder.setNegativeButton(getString(android.R.string.cancel),
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        // Cancel the dialog
+                        dialog.cancel();
+                    }
+                });
+
+        AlertDialog dialog = builder.create();
+        // display dialog
+        dialog.show();
     }
 
     @Override
@@ -66,6 +111,7 @@ public class MainDrawerActivity extends AppCompatActivity
             case REQUEST_ENABLE_BT:
                 if (resultCode == RESULT_OK) {
                     // bluetooth was enabled
+                    pickAdapterLaunchService();
                 } else {
                     // bluetooth remains disabled
                     Toast newToast = Toast.makeText(this, "Functionality limited due to bluetooth being disabled!", Toast.LENGTH_LONG);
