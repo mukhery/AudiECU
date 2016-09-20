@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical" android:layout_width="match_parent"
-    android:layout_height="match_parent">
-
-    <TextView
-        android:id="@+id/deviceString"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Bluetooth Device Name\nBluetooth Device MAC"/>
-
-</LinearLayout>
+<CheckedTextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/deviceString"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:checkMark="?android:attr/listChoiceIndicatorSingle"
+    android:gravity="center_vertical"
+    android:padding="16dp"
+    android:text="Bluetooth Device Name\nBluetooth Device MAC"
+    android:textSize="16sp" />

@@ -8,9 +8,9 @@
     tools:showIn="@layout/app_bar_main_drawer">
 
     <fragment
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:id="@+id/drawer_content"
         android:name="com.ryanmukherjee.audiecu.TerminalFragment"
-        android:id="@+id/drawer_content"/>
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
 
 </LinearLayout>

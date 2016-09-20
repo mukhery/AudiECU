@@ -7,12 +7,13 @@
 
     <application
         android:allowBackup="false"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@drawable/ic_menu_logo"
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".MainDrawerActivity"
-            android:label="@string/title_activity_main_drawer"
+        <activity
+            android:name=".MainDrawerActivity"
+            android:label="@string/app_name"
             android:theme="@style/AppTheme.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -23,8 +24,13 @@
 
         <service
             android:name=".BluetoothSPPService"
-            android:exported="false"/>
+            android:exported="false" />
 
+        <provider
+            android:name=".SerialContentProvider"
+            android:authorities="com.ryanmukherjee.audiecu.provider"
+            android:enabled="true"
+            android:exported="false"></provider>
     </application>
 
 </manifest>

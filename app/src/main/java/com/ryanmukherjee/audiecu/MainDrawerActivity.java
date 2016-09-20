@@ -1,12 +1,12 @@
 package com.ryanmukherjee.audiecu;
 
+import android.app.Fragment;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.design.widget.NavigationView;
-import android.support.v4.app.Fragment;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
@@ -15,6 +15,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.ListView;
 import android.widget.Toast;
 
 import java.util.HashMap;
@@ -24,7 +25,6 @@ import java.util.Set;
 public class MainDrawerActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
-    public final static String ACTION_SEND_COMMAND = "com.ryanmukherjee.intent.SEND_COMMAND";
     private final static int REQUEST_ENABLE_BT = 1;
     private DrawerLayout mDrawer;
     // Map for storing fragments as the user switches between them
@@ -51,7 +51,12 @@ public class MainDrawerActivity extends AppCompatActivity
 
         // Get the fragment that is initialized on startup and place it into our map
         mFragmentMap = new HashMap<>();
-        mFragmentMap.put(R.id.nav_terminal, getSupportFragmentManager().findFragmentById(R.id.drawer_content));
+        mFragmentMap.put(R.id.nav_terminal, getFragmentManager().findFragmentById(R.id.drawer_content));
+
+        // Set navigation to the first drawer item
+        if (savedInstanceState == null) {
+            navigationView.getMenu().performIdentifierAction(R.id.nav_terminal, 0);
+        }
 
         // Attempt to grab the current device's bluetooth radio
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -75,14 +80,15 @@ public class MainDrawerActivity extends AppCompatActivity
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Select OBD Adapter");
 
-        builder.setSingleChoiceItems(mArrayAdapter, 0, null);
+        builder.setSingleChoiceItems(mArrayAdapter, -1, null);
 
         builder.setPositiveButton("Connect",
                 new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         // positive button logic
-                        BluetoothDevice currDevice = mArrayAdapter.getDeviceItem(which);
+                        ListView listView = ((AlertDialog) dialog).getListView();
+                        BluetoothDevice currDevice = mArrayAdapter.getDeviceItem(listView.getCheckedItemPosition());
                         Intent bluetoothServiceIntent = new Intent(MainDrawerActivity.this, BluetoothSPPService.class);
                         bluetoothServiceIntent.putExtra("bluetoothDevice", currDevice);
                         startService(bluetoothServiceIntent);
@@ -107,7 +113,7 @@ public class MainDrawerActivity extends AppCompatActivity
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        switch(requestCode) {
+        switch (requestCode) {
             case REQUEST_ENABLE_BT:
                 if (resultCode == RESULT_OK) {
                     // bluetooth was enabled
@@ -133,7 +139,6 @@ public class MainDrawerActivity extends AppCompatActivity
     }
 
 
-
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -143,7 +148,7 @@ public class MainDrawerActivity extends AppCompatActivity
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        switch(item.getItemId()) {
+        switch (item.getItemId()) {
             case R.id.action_settings:
                 return true;
         }
@@ -180,7 +185,7 @@ public class MainDrawerActivity extends AppCompatActivity
         }
 
         // Replace our content with the selected fragment and commit
-        getSupportFragmentManager().beginTransaction().replace(R.id.drawer_content, fragment).commitAllowingStateLoss();
+        getFragmentManager().beginTransaction().replace(R.id.drawer_content, fragment).commitAllowingStateLoss();
 
         // Check the navigation drawer item now that it's selected
         item.setChecked(true);
