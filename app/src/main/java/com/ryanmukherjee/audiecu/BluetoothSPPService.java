@@ -9,8 +9,15 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.Binder;
+import android.os.IBinder;
+import android.os.IInterface;
+import android.os.Parcel;
+import android.os.RemoteException;
+import android.support.annotation.Nullable;
 
 import java.io.BufferedReader;
+import java.io.FileDescriptor;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -29,6 +36,20 @@ public class BluetoothSPPService extends IntentService {
     private OutputStream mOutStream;
 
     private boolean mDisconnect;
+
+    private final IBinder mBinder = new ServiceBinder();
+
+    public class ServiceBinder extends Binder {
+        public BluetoothSPPService getService() {
+            return BluetoothSPPService.this;
+        }
+    }
+
+    @Nullable
+    @Override
+    public IBinder onBind(Intent intent) {
+        return mBinder;
+    }
 
     private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
         @Override

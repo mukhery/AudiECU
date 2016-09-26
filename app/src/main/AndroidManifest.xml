@@ -33,7 +33,7 @@
             android:exported="false"></provider>
         <meta-data
             android:name="io.fabric.ApiKey"
-            android:value="@string/FabricKey" />
+            android:value="${fabricKey}" />
     </application>
 
     <uses-permission android:name="android.permission.INTERNET" />
