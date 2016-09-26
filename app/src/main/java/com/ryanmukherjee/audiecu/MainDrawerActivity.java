@@ -3,9 +3,12 @@ package com.ryanmukherjee.audiecu;
 import android.app.Fragment;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.content.ComponentName;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
@@ -18,6 +21,8 @@ import android.view.MenuItem;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import com.crashlytics.android.Crashlytics;
+import io.fabric.sdk.android.Fabric;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -32,10 +37,12 @@ public class MainDrawerActivity extends AppCompatActivity
     private BluetoothAdapter mBluetoothAdapter;
     private Set<BluetoothDevice> mPairedDevices;
     private BluetoothDeviceArrayAdapter mArrayAdapter;
+    private MenuItem mConnectionMenu;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Fabric.with(this, new Crashlytics());
         setContentView(R.layout.activity_main_drawer);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -60,18 +67,6 @@ public class MainDrawerActivity extends AppCompatActivity
 
         // Attempt to grab the current device's bluetooth radio
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        if (mBluetoothAdapter == null) {
-            // Device does not support Bluetooth
-        } else {
-            // If the bluetooth adapter is not enabled, then request that it be enabled
-            if (!mBluetoothAdapter.isEnabled()) {
-                Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-                startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
-            } else {
-                // If the adapter is enabled, then let's prompt the user to connect
-                pickAdapterLaunchService();
-            }
-        }
     }
 
     private void pickAdapterLaunchService() {
@@ -91,6 +86,20 @@ public class MainDrawerActivity extends AppCompatActivity
                         BluetoothDevice currDevice = mArrayAdapter.getDeviceItem(listView.getCheckedItemPosition());
                         Intent bluetoothServiceIntent = new Intent(MainDrawerActivity.this, BluetoothSPPService.class);
                         bluetoothServiceIntent.putExtra("bluetoothDevice", currDevice);
+
+                        // Bind to the service so that we can monitor connection state
+                        bindService(bluetoothServiceIntent, new ServiceConnection() {
+                            @Override
+                            public void onServiceConnected(ComponentName name, IBinder service) {
+                                mConnectionMenu.setTitle("Disconnect");
+                            }
+
+                            @Override
+                            public void onServiceDisconnected(ComponentName name) {
+                                mConnectionMenu.setTitle("Connect");
+                            }
+                        }, 0);
+
                         startService(bluetoothServiceIntent);
                     }
                 });
@@ -120,7 +129,7 @@ public class MainDrawerActivity extends AppCompatActivity
                     pickAdapterLaunchService();
                 } else {
                     // bluetooth remains disabled
-                    Toast newToast = Toast.makeText(this, "Functionality limited due to bluetooth being disabled!", Toast.LENGTH_LONG);
+                    Toast newToast = Toast.makeText(this, "Functionality limited, Bluetooth is disabled!", Toast.LENGTH_LONG);
                     newToast.show();
                 }
                 break;
@@ -143,12 +152,35 @@ public class MainDrawerActivity extends AppCompatActivity
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.main_drawer, menu);
+        mConnectionMenu = menu.findItem(R.id.action_connection);
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
+            case R.id.action_connection:
+                if (item.getTitle().equals("Connect")) {
+                    if (mBluetoothAdapter == null) {
+                        // Device does not support Bluetooth
+                        Toast newToast = Toast.makeText(this, "Functionality limited, Bluetooth not supported!", Toast.LENGTH_LONG);
+                        newToast.show();
+                    } else {
+                        // If the bluetooth adapter is not enabled, then request that it be enabled
+                        if (!mBluetoothAdapter.isEnabled()) {
+                            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+                            startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
+                        } else {
+                            // If the adapter is enabled, then let's prompt the user to connect
+                            pickAdapterLaunchService();
+                        }
+                    }
+                } else {
+                    // Send a Bluetooth disconnect broadcast to the service
+                    Intent intent = new Intent(BluetoothSPPService.ACTION_DISCONNECT);
+                    sendBroadcast(intent);
+                }
+                return true;
             case R.id.action_settings:
                 return true;
         }

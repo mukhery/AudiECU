@@ -31,6 +31,10 @@
             android:authorities="com.ryanmukherjee.audiecu.provider"
             android:enabled="true"
             android:exported="false"></provider>
+        <meta-data
+            android:name="io.fabric.ApiKey"
+            android:value="@string/FabricKey" />
     </application>
 
+    <uses-permission android:name="android.permission.INTERNET" />
 </manifest>

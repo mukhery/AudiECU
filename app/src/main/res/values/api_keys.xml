@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="FabricKey">INSERT-YOUR-FABRIC-KEY-HERE</string>
+</resources>
