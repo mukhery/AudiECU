@@ -12,6 +12,9 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
@@ -20,6 +23,7 @@ import android.widget.ImageButton;
 public class TerminalFragment extends Fragment implements View.OnClickListener {
 
     private static final int SERIAL_LOADER = 1;
+    private RecyclerView mSerialRecycler;
     private SerialCursorAdapter mSerialCursorAdapter;
 
     private EditText mInput;
@@ -34,6 +38,7 @@ public class TerminalFragment extends Fragment implements View.OnClickListener {
             String[] projection = {
                     SerialContentProvider.SERIAL_ID,
                     SerialContentProvider.SERIAL_CONTENT,
+                    SerialContentProvider.SERIAL_TYPE,
                     SerialContentProvider.SERIAL_TIMESTAMP
             };
 
@@ -43,8 +48,11 @@ public class TerminalFragment extends Fragment implements View.OnClickListener {
 
         @Override
         public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
-            if (mSerialCursorAdapter != null)
+            if (mSerialCursorAdapter != null) {
                 mSerialCursorAdapter.changeCursor(data);
+                // Scroll to the bottom of the terminal log
+                mSerialRecycler.scrollToPosition(mSerialRecycler.getAdapter().getItemCount()-1);
+            }
         }
 
         @Override
@@ -55,6 +63,28 @@ public class TerminalFragment extends Fragment implements View.OnClickListener {
     };
 
     @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setHasOptionsMenu(true);
+    }
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        inflater.inflate(R.menu.terminal_menu, menu);
+        super.onCreateOptionsMenu(menu, inflater);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch(item.getItemId()) {
+            case R.id.action_clear:
+                getActivity().getContentResolver().delete(SerialContentProvider.SERIAL_URI, null, null);
+                return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
@@ -63,12 +93,12 @@ public class TerminalFragment extends Fragment implements View.OnClickListener {
         ImageButton button = (ImageButton) v.findViewById(R.id.send);
         button.setOnClickListener(this);
 
-        RecyclerView serialRecycler = (RecyclerView) v.findViewById(R.id.serialRecycler);
+        mSerialRecycler = (RecyclerView) v.findViewById(R.id.serialRecycler);
         mSerialCursorAdapter = new SerialCursorAdapter(getActivity().getLayoutInflater());
-        serialRecycler.setAdapter(mSerialCursorAdapter);
+        mSerialRecycler.setAdapter(mSerialCursorAdapter);
         LinearLayoutManager layoutManager = new LinearLayoutManager(getActivity(), LinearLayoutManager.VERTICAL, false);
         layoutManager.setStackFromEnd(true);
-        serialRecycler.setLayoutManager(layoutManager);
+        mSerialRecycler.setLayoutManager(layoutManager);
 
         return v;
     }

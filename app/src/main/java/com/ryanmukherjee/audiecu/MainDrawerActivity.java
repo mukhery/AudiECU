@@ -212,7 +212,7 @@ public class MainDrawerActivity extends AppCompatActivity
                 fragment = (Fragment) fragmentClass.newInstance();
                 mFragmentMap.put(id, fragment);
             } catch (Exception e) {
-                e.printStackTrace();
+                Crashlytics.logException(e);
             }
         }
 

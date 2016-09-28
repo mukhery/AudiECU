@@ -16,6 +16,7 @@ public class SerialContentProvider extends ContentProvider {
     public static final String SERIAL_TABLE = "serial";
     public static final String SERIAL_ID = "_id";
     public static final String SERIAL_CONTENT = "content";
+    public static final String SERIAL_TYPE = "type";
     public static final String SERIAL_TIMESTAMP = "timestamp";
 
     public static final String AUTHORITY = "com.ryanmukherjee.audiecu.provider";
@@ -36,7 +37,7 @@ public class SerialContentProvider extends ContentProvider {
         // Select multiple rows
         URI_MATCHER.addURI(AUTHORITY, SERIAL_TABLE, SERIAL_TABLE_ALL_ROWS);
         // Select single row
-        URI_MATCHER.addURI(AUTHORITY, SERIAL_TABLE, SERIAL_TABLE_SINGLE_ROW);
+        URI_MATCHER.addURI(AUTHORITY, SERIAL_TABLE + "/#", SERIAL_TABLE_SINGLE_ROW);
     }
 
     // MIME types
@@ -60,8 +61,8 @@ public class SerialContentProvider extends ContentProvider {
                     case SERIAL_TABLE:
                         sql = String.format(
                                 "CREATE TABLE %s (%s integer primary key autoincrement, " +
-                                        "%s text, %s datetime default current_timestamp)",
-                                SERIAL_TABLE, SERIAL_ID, SERIAL_CONTENT, SERIAL_TIMESTAMP
+                                        "%s text, %s integer, %s datetime default current_timestamp)",
+                                SERIAL_TABLE, SERIAL_ID, SERIAL_CONTENT, SERIAL_TYPE, SERIAL_TIMESTAMP
                         );
                         break;
                     default:

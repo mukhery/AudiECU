@@ -7,6 +7,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import com.ryanmukherjee.audiecu.BluetoothSPPService.SerialType;
+
 public class SerialCursorAdapter extends CursorRecyclerViewAdapter<SerialCursorAdapter.SerialViewHolder> {
 
     private LayoutInflater layoutInflater;
@@ -28,14 +30,23 @@ public class SerialCursorAdapter extends CursorRecyclerViewAdapter<SerialCursorA
             return;
 
         String content = cursor.getString(cursor.getColumnIndex(SerialContentProvider.SERIAL_CONTENT));
+        SerialType type = SerialType.values()[cursor.getInt(cursor.getColumnIndex(SerialContentProvider.SERIAL_TYPE))];
+        String timestamp = cursor.getString(cursor.getColumnIndex(SerialContentProvider.SERIAL_TIMESTAMP));
+        timestamp.replace(' ', '\n');
+        viewHolder.timestamp.setText(timestamp);
+        // Add terminal prompt
+        if (type == SerialType.INPUT) {
+            content = "> " + content;
+        }
         viewHolder.serialContent.setText(content);
     }
 
     public static class SerialViewHolder extends RecyclerView.ViewHolder {
-        private TextView serialContent;
+        private TextView timestamp, serialContent;
 
         public SerialViewHolder(View view) {
             super(view);
+            timestamp = (TextView) view.findViewById(R.id.timestamp);
             serialContent = (TextView) view.findViewById(R.id.serialContent);
         }
     }

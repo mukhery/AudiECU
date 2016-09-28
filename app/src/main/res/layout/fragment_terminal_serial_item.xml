@@ -4,17 +4,29 @@
     android:layout_height="wrap_content">
 
     <TextView
-        android:layout_width="0dp"
-        android:layout_weight="0.25"
+        android:id="@+id/timestamp"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="19720101\n00:00:00"
+        android:padding="5dp"
+        android:textSize="15sp"
+        android:textStyle="italic"
         />
+
+    <View
+        android:layout_width="1dp"
+        android:layout_height="match_parent"
+        android:background="@android:color/holo_blue_light" />
 
     <TextView
         android:id="@+id/serialContent"
+        android:paddingLeft="5dp"
+        android:paddingRight="5dp"
         android:layout_width="0dp"
-        android:layout_weight="0.75"
-        android:layout_height="wrap_content"
-        android:textSize="16sp"
+        android:layout_weight="1"
+        android:layout_height="match_parent"
+        android:textSize="20sp"
         android:text="Serial Content"/>
 
 </LinearLayout>
