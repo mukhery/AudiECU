@@ -16,6 +16,7 @@ import android.os.Parcel;
 import android.os.RemoteException;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.os.ResultReceiver;
 
 import com.crashlytics.android.Crashlytics;
 
@@ -39,6 +40,9 @@ public class BluetoothSPPService extends IntentService {
     public final static String ACTION_SEND_COMMAND = "com.ryanmukherjee.intent.SEND_COMMAND";
     public final static String ACTION_DISCONNECT = "com.ryanmukherjee.intent.DISCONNECT";
 
+    public final static int BLUETOOTH_CONNECTED = 100;
+    public final static int BLUETOOTH_DISCONNECTED = 200;
+
     public enum SerialType {
         INPUT, OUTPUT
     }
@@ -49,20 +53,6 @@ public class BluetoothSPPService extends IntentService {
     private OutputStream mOutStream;
 
     private boolean mDisconnect;
-
-    private final IBinder mBinder = new ServiceBinder();
-
-    public class ServiceBinder extends Binder {
-        public BluetoothSPPService getService() {
-            return BluetoothSPPService.this;
-        }
-    }
-
-    @Nullable
-    @Override
-    public IBinder onBind(Intent intent) {
-        return mBinder;
-    }
 
     private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
         @Override
@@ -96,7 +86,6 @@ public class BluetoothSPPService extends IntentService {
     private void logSerial(String serialContent, SerialType type) {
         ContentValues values = new ContentValues();
         values.put(SerialContentProvider.SERIAL_CONTENT, serialContent);
-        values.put(SerialContentProvider.SERIAL_TIMESTAMP, " time('now') ");
         values.put(SerialContentProvider.SERIAL_TYPE, type.ordinal());
         getContentResolver().insert(SerialContentProvider.SERIAL_URI, values);
     }
@@ -122,6 +111,7 @@ public class BluetoothSPPService extends IntentService {
     @Override
     protected void onHandleIntent(Intent intent) {
         BluetoothDevice bluetoothDevice = intent.getParcelableExtra("bluetoothDevice");
+        ResultReceiver connectionReceiver = intent.getParcelableExtra("connectionReceiver");
         mSocket = null;
         try {
             mSocket = bluetoothDevice.createRfcommSocketToServiceRecord(UUID.fromString(SPP_UUID));
@@ -133,6 +123,7 @@ public class BluetoothSPPService extends IntentService {
 
                 // Keep listening to the InputStream until we receive a disconnect intent
                 byte[] inBuffer = new byte[8192];
+                connectionReceiver.send(BLUETOOTH_CONNECTED, null);
                 mDisconnect = false;
                 while (!mDisconnect) {
                     if (mInStream.available() > 0) {
@@ -152,6 +143,7 @@ public class BluetoothSPPService extends IntentService {
                 } catch (IOException ignored) {
                 }
             }
+            connectionReceiver.send(BLUETOOTH_DISCONNECTED, null);
         }
 
     }

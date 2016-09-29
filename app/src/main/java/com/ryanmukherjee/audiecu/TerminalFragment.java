@@ -11,6 +11,7 @@ import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -19,6 +20,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.TextView;
+
+import static android.view.inputmethod.EditorInfo.IME_ACTION_SEND;
 
 public class TerminalFragment extends Fragment implements View.OnClickListener {
 
@@ -43,7 +47,7 @@ public class TerminalFragment extends Fragment implements View.OnClickListener {
             };
 
             return new CursorLoader(getActivity(), SerialContentProvider.SERIAL_URI, projection,
-                    null, null, SerialContentProvider.SERIAL_TIMESTAMP + " DESC");
+                    null, null, SerialContentProvider.SERIAL_TIMESTAMP + " ASC");
         }
 
         @Override
@@ -90,9 +94,19 @@ public class TerminalFragment extends Fragment implements View.OnClickListener {
         // Inflate the layout for this fragment
         View v = inflater.inflate(R.layout.fragment_terminal, container, false);
         mInput = (EditText) v.findViewById(R.id.input);
-        ImageButton button = (ImageButton) v.findViewById(R.id.send);
+        final ImageButton button = (ImageButton) v.findViewById(R.id.send);
         button.setOnClickListener(this);
 
+        mInput.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if (actionId == IME_ACTION_SEND) {
+                    button.performClick();
+                    return true;
+                }
+                return false;
+            }
+        });
         mSerialRecycler = (RecyclerView) v.findViewById(R.id.serialRecycler);
         mSerialCursorAdapter = new SerialCursorAdapter(getActivity().getLayoutInflater());
         mSerialRecycler.setAdapter(mSerialCursorAdapter);

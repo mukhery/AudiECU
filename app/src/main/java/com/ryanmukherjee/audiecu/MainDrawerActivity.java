@@ -1,6 +1,7 @@
 package com.ryanmukherjee.audiecu;
 
 import android.app.Fragment;
+import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.ComponentName;
@@ -8,8 +9,10 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
 import android.support.design.widget.NavigationView;
+import android.support.v4.os.ResultReceiver;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
@@ -38,6 +41,8 @@ public class MainDrawerActivity extends AppCompatActivity
     private Set<BluetoothDevice> mPairedDevices;
     private BluetoothDeviceArrayAdapter mArrayAdapter;
     private MenuItem mConnectionMenu;
+
+    private ProgressDialog mProgressDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,6 +74,28 @@ public class MainDrawerActivity extends AppCompatActivity
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
     }
 
+    private class BluetoothConnectionReceiver extends ResultReceiver {
+        public BluetoothConnectionReceiver(Handler handler) {
+            super(handler);
+        }
+
+        @Override
+        protected void onReceiveResult(int resultCode, Bundle resultData) {
+            super.onReceiveResult(resultCode, resultData);
+
+            switch (resultCode) {
+                case BluetoothSPPService.BLUETOOTH_CONNECTED:
+                    mConnectionMenu.setTitle("Disconnect");
+                    break;
+                case BluetoothSPPService.BLUETOOTH_DISCONNECTED:
+                    mConnectionMenu.setTitle("Connect");
+                    break;
+            }
+            if (mProgressDialog != null && mProgressDialog.isShowing())
+                mProgressDialog.dismiss();
+        }
+    }
+
     private void pickAdapterLaunchService() {
         mArrayAdapter = new BluetoothDeviceArrayAdapter(this, R.layout.bluetooth_device_item, R.id.deviceString, mBluetoothAdapter.getBondedDevices());
 
@@ -86,19 +113,14 @@ public class MainDrawerActivity extends AppCompatActivity
                         BluetoothDevice currDevice = mArrayAdapter.getDeviceItem(listView.getCheckedItemPosition());
                         Intent bluetoothServiceIntent = new Intent(MainDrawerActivity.this, BluetoothSPPService.class);
                         bluetoothServiceIntent.putExtra("bluetoothDevice", currDevice);
+                        // Use the BluetoothConnectionReceiver to know when the service is connected
+                        bluetoothServiceIntent.putExtra("connectionReceiver", new BluetoothConnectionReceiver(new Handler()));
 
-                        // Bind to the service so that we can monitor connection state
-                        bindService(bluetoothServiceIntent, new ServiceConnection() {
-                            @Override
-                            public void onServiceConnected(ComponentName name, IBinder service) {
-                                mConnectionMenu.setTitle("Disconnect");
-                            }
-
-                            @Override
-                            public void onServiceDisconnected(ComponentName name) {
-                                mConnectionMenu.setTitle("Connect");
-                            }
-                        }, 0);
+                        mProgressDialog = new ProgressDialog(MainDrawerActivity.this,
+                                R.style.AppTheme_Dialog);
+                        mProgressDialog.setIndeterminate(true);
+                        mProgressDialog.setMessage("Connecting...");
+                        mProgressDialog.show();
 
                         startService(bluetoothServiceIntent);
                     }

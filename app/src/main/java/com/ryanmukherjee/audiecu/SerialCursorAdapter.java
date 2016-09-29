@@ -32,7 +32,7 @@ public class SerialCursorAdapter extends CursorRecyclerViewAdapter<SerialCursorA
         String content = cursor.getString(cursor.getColumnIndex(SerialContentProvider.SERIAL_CONTENT));
         SerialType type = SerialType.values()[cursor.getInt(cursor.getColumnIndex(SerialContentProvider.SERIAL_TYPE))];
         String timestamp = cursor.getString(cursor.getColumnIndex(SerialContentProvider.SERIAL_TIMESTAMP));
-        timestamp.replace(' ', '\n');
+        timestamp = timestamp.replace(' ', '\n');
         viewHolder.timestamp.setText(timestamp);
         // Add terminal prompt
         if (type == SerialType.INPUT) {
