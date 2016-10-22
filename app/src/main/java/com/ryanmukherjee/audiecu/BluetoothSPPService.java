@@ -64,7 +64,11 @@ public class BluetoothSPPService extends IntentService {
                 case ACTION_SEND_COMMAND:
                     try {
                         String serialContent = intent.getStringExtra("content");
+                        // Add carriage return
+                        serialContent += '\r';
+                        // Send to bluetooth device
                         mOutStream.write(serialContent.getBytes());
+                        // Log sent command to our local content provider
                         logSerial(serialContent, SerialType.INPUT);
                     } catch (IOException e) {
                         Crashlytics.logException(e);
